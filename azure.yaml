@@ -1,0 +1,12 @@
+# Azure Developer CLI Configuration
+# https://learn.microsoft.com/azure/developer/azure-developer-cli/azd-reference
+
+name: inference-calc
+services:
+  web:
+    project: ./index.html
+    host: static
+    hooks:
+      post-deploy:
+        run: echo "Static website deployed!"
+        shell: sh

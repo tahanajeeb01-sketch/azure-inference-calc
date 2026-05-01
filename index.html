@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Inference Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #fff;
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 2.2rem;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+
+        .card {
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            border: 1px solid #30363d;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            color: #c9d1d9;
+            margin-bottom: 10px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            background: #0d1117;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+
+        select option {
+            background: #0d1117;
+            color: #fff;
+        }
+
+        /* Autocomplete dropdown */
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: 4px;
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #21262d;
+            transition: background 0.2s;
+        }
+
+        .autocomplete-item:hover {
+            background: #21262d;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-city {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .autocomplete-country {
+            color: #8b949e;
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+
+        .btn-calculate {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #238636 0%, #1f6feb 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(31, 111, 235, 0.3);
+        }
+
+        .btn-calculate:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .result-title {
+            color: #fff;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-aez {
+            background: rgba(88, 166, 255, 0.15);
+            color: #58a6ff;
+            border: 1px solid rgba(88, 166, 255, 0.3);
+        }
+
+        .badge-region {
+            background: rgba(35, 134, 54, 0.15);
+            color: #3fb950;
+            border: 1px solid rgba(35, 134, 54, 0.3);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .result-item {
+            background: rgba(13, 17, 23, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #21262d;
+        }
+
+        .result-label {
+            color: #8b949e;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .result-value {
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .result-value.highlight {
+            color: #58a6ff;
+        }
+
+        .result-value.latency {
+            color: #f0883e;
+        }
+
+        .explanation {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(13, 17, 23, 0.6);
+            border-radius: 12px;
+            border-left: 4px solid #58a6ff;
+        }
+
+        .explanation h3 {
+            color: #fff;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .explanation p {
+            color: #8b949e;
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        .explanation strong {
+            color: #58a6ff;
+        }
+
+        .gpu-rationale {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(88, 166, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(88, 166, 255, 0.2);
+        }
+
+        .gpu-rationale-title {
+            color: #58a6ff;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .gpu-rationale p {
+            color: #8b949e;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .latency-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .latency-item {
+            background: rgba(13, 17, 23, 0.4);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .latency-item-label {
+            color: #8b949e;
+            font-size: 0.75rem;
+            margin-bottom: 4px;
+        }
+
+        .latency-item-value {
+            color: #f0883e;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .info-note {
+            background: rgba(240, 246, 252, 0.1);
+            border: 1px solid rgba(240, 246, 252, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #8b949e;
+        }
+
+        .info-note strong {
+            color: #c9d1d9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Azure Inference Calculator</h1>
+        <p class="subtitle">Find the optimal Azure region for your AI inference workload</p>
+
+        <div class="card">
+            <div class="info-note">
+                <strong>How it works:</strong> Enter your city → Find closest Edge POP → Calculate speed-of-light latency from Edge POP to AEZ vs standard region → Recommend best option
+            </div>
+
+            <div class="form-group">
+                <label for="city">📍 Your Location (City)</label>
+                <div class="autocomplete-wrapper">
+                    <input type="text" id="city" placeholder="e.g., Los Angeles, London, Tokyo..." autocomplete="off">
+                    <div class="autocomplete-dropdown" id="cityDropdown"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="workload">🎯 Workload Type</label>
+                <select id="workload">
+                    <option value="">Select your workload...</option>
+                    <option value="llm">Large Language Model (LLM) - Chat/Completion</option>
+                    <option value="embedding">Text Embedding - Vector Search</option>
+                    <option value="image">Image Generation - Diffusion Models</option>
+                    <option value="speech">Speech Processing - STT/TTS</option>
+                    <option value="realtime">Real-time Inference - Low Latency</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="latency">⏱️ Target Latency (ms)</label>
+                <input type="number" id="latency" placeholder="e.g., 15" min="1" max="1000" value="20">
+            </div>
+
+            <button class="btn-calculate" id="calculateBtn" onclick="calculate()" disabled>Calculate Recommendation</button>
+        </div>
+
+        <div class="card result" id="result">
+            <div class="result-header">
+                <div class="result-title">
+                    <span>🎯 Recommendation</span>
+                </div>
+                <span class="badge" id="deploymentType"></span>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-item">
+                    <div class="result-label">Location</div>
+                    <div class="result-value" id="userLocation">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Estimated Latency</div>
+                    <div class="result-value latency" id="estLatency">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Azure Region</div>
+                    <div class="result-value highlight" id="region">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">GPU Recommendation</div>
+                    <div class="result-value" id="gpu">-</div>
+                </div>
+            </div>
+
+            <div class="latency-breakdown" id="latencyBreakdown"></div>
+
+            <div class="explanation">
+                <h3>📖 Why this recommendation?</h3>
+                <p id="explanationText"></p>
+            </div>
+
+            <div class="gpu-rationale">
+                <div class="gpu-rationale-title">💡 GPU Selection Rationale</div>
+                <p id="gpuRationale"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CITY DATABASE with coordinates
+        // ============================================
+        const cities = [
+            // US Cities
+            { name: "Los Angeles", country: "USA", lat: 34.0522, lng: -118.2437 },
+            { name: "New York", country: "USA", lat: 40.7128, lng: -74.0060 },
+            { name: "Chicago", country: "USA", lat: 41.8781, lng: -87.6298 },
+            { name: "Houston", country: "USA", lat: 29.7604, lng: -95.3698 },
+            { name: "Phoenix", country: "USA", lat: 33.4484, lng: -112.0740 },
+            { name: "San Francisco", country: "USA", lat: 37.7749, lng: -122.4194 },
+            { name: "Seattle", country: "USA", lat: 47.6062, lng: -122.3321 },
+            { name: "Denver", country: "USA", lat: 39.7392, lng: -104.9903 },
+            { name: "Dallas", country: "USA", lat: 32.7767, lng: -96.7970 },
+            { name: "Atlanta", country: "USA", lat: 33.7490, lng: -84.3880 },
+            { name: "Miami", country: "USA", lat: 25.7617, lng: -80.1918 },
+            { name: "Boston", country: "USA", lat: 42.3601, lng: -71.0589 },
+            { name: "Washington DC", country: "USA", lat: 38.9072, lng: -77.0369 },
+            { name: "Las Vegas", country: "USA", lat: 36.1699, lng: -115.1398 },
+            { name: "San Jose", country: "USA", lat: 37.3382, lng: -121.8863 },
+            { name: "Minneapolis", country: "USA", lat: 44.9778, lng: -93.2650 },
+            { name: "Portland", country: "USA", lat: 45.5152, lng: -122.6784 },
+            { name: "Salt Lake City", country: "USA", lat: 40.7608, lng: -111.8910 },
+            { name: "Kansas City", country: "USA", lat: 39.0997, lng: -94.5786 },
+            { name: "Charlotte", country: "USA", lat: 35.2271, lng: -80.8431 },
+            // European Cities
+            { name: "London", country: "UK", lat: 51.5074, lng: -0.1278 },
+            { name: "Paris", country: "France", lat: 48.8566, lng: 2.3522 },
+            { name: "Frankfurt", country: "Germany", lat: 50.1109, lng: 8.6821 },
+            { name: "Amsterdam", country: "Netherlands", lat: 52.3676, lng: 4.9041 },
+            { name: "Berlin", country: "Germany", lat: 52.5200, lng: 13.4050 },
+            { name: "Madrid", country: "Spain", lat: 40.4168, lng: -3.7038 },
+            { name: "Milan", country: "Italy", lat: 45.4642, lng: 9.1900 },
+            { name: "Dublin", country: "Ireland", lat: 53.3498, lng: -6.2603 },
+            { name: "Stockholm", country: "Sweden", lat: 59.3293, lng: 18.0686 },
+            { name: "Vienna", country: "Austria", lat: 48.2082, lng: 16.3738 },
+            { name: "Zurich", country: "Switzerland", lat: 47.3769, lng: 8.5417 },
+            { name: "Brussels", country: "Belgium", lat: 50.8503, lng: 4.3517 },
+            { name: "Warsaw", country: "Poland", lat: 52.2297, lng: 21.0122 },
+            { name: "Copenhagen", country: "Denmark", lat: 55.6761, lng: 12.5683 },
+            { name: "Oslo", country: "Norway", lat: 59.9139, lng: 10.7522 },
+            { name: "Helsinki", country: "Finland", lat: 60.1699, lng: 24.9384 },
+            { name: "Lisbon", country: "Portugal", lat: 38.7223, lng: -9.1393 },
+            { name: "Athens", country: "Greece", lat: 37.9838, lng: 23.7275 },
+            { name: "Prague", country: "Czech Republic", lat: 50.0755, lng: 14.4378 },
+            { name: "Budapest", country: "Hungary", lat: 47.4979, lng: 19.0402 },
+            // Asia Pacific Cities
+            { name: "Tokyo", country: "Japan", lat: 35.6762, lng: 139.6503 },
+            { name: "Singapore", country: "Singapore", lat: 1.3521, lng: 103.8198 },
+            { name: "Sydney", country: "Australia", lat: -33.8688, lng: 151.2093 },
+            { name: "Melbourne", country: "Australia", lat: -37.8136, lng: 144.9631 },
+            { name: "Hong Kong", country: "Hong Kong", lat: 22.3193, lng: 114.1694 },
+            { name: "Seoul", country: "South Korea", lat: 37.5665, lng: 126.9780 },
+            { name: "Mumbai", country: "India", lat: 19.0760, lng: 72.8777 },
+            { name: "Bangalore", country: "India", lat: 12.9716, lng: 77.5946 },
+            { name: "Delhi", country: "India", lat: 28.7041, lng: 77.1025 },
+            { name: "Bangkok", country: "Thailand", lat: 13.7563, lng: 100.5018 },
+            { name: "Jakarta", country: "Indonesia", lat: -6.2088, lng: 106.8456 },
+            { name: "Kuala Lumpur", country: "Malaysia", lat: 3.1390, lng: 101.6869 },
+            { name: "Taipei", country: "Taiwan", lat: 25.0330, lng: 121.5654 },
+            { name: "Osaka", country: "Japan", lat: 34.6937, lng: 135.5023 },
+            { name: "Auckland", country: "New Zealand", lat: -36.8509, lng: 174.7645 },
+            { name: "Dubai", country: "UAE", lat: 25.2048, lng: 55.2708 },
+            { name: "Tel Aviv", country: "Israel", lat: 32.0853, lng: 34.7818 },
+            // South American Cities
+            { name: "São Paulo", country: "Brazil", lat: -23.5505, lng: -46.6333 },
+            { name: "Rio de Janeiro", country: "Brazil", lat: -22.9068, lng: -43.1729 },
+            { name: "Buenos Aires", country: "Argentina", lat: -34.6037, lng: -58.3816 },
+            { name: "Santiago", country: "Chile", lat: -33.4489, lng: -70.6693 },
+            { name: "Bogota", country: "Colombia", lat: 4.7110, lng: -74.0721 },
+            { name: "Mexico City", country: "Mexico", lat: 19.4326, lng: -99.1332 },
+            // Canadian Cities
+            { name: "Toronto", country: "Canada", lat: 43.6532, lng: -79.3832 },
+            { name: "Vancouver", country: "Canada", lat: 49.2827, lng: -123.1207 },
+            { name: "Montreal", country: "Canada", lat: 45.5017, lng: -73.5673 },
+        ];
+
+        // ============================================
+        // AZURE EDGE POPs (ExpressRoute Peering Locations)
+        // These are where customers peer with Microsoft
+        // ============================================
+        const edgePOPs = [
+            // US
+            { name: "Los Angeles", lat: 34.0522, lng: -118.2437, region: "West US" },
+            { name: "New York", lat: 40.7128, lng: -74.0060, region: "East US" },
+            { name: "Chicago", lat: 41.8781, lng: -87.6298, region: "North Central US" },
+            { name: "Dallas", lat: 32.7767, lng: -96.7970, region: "South Central US" },
+            { name: "Seattle", lat: 47.6062, lng: -122.3321, region: "West US 2" },
+            { name: "San Jose", lat: 37.3382, lng: -121.8863, region: "West US" },
+            { name: "Miami", lat: 25.7617, lng: -80.1918, region: "East US" },
+            { name: "Atlanta", lat: 33.7490, lng: -84.3880, region: "East US" },
+            { name: "Denver", lat: 39.7392, lng: -104.9903, region: "West Central US" },
+            { name: "Phoenix", lat: 33.4484, lng: -112.0740, region: "West US 3" },
+            { name: "Washington DC", lat: 38.9072, lng: -77.0369, region: "East US 2" },
+            { name: "Boston", lat: 42.3601, lng: -71.0589, region: "East US" },
+            { name: "Minneapolis", lat: 44.9778, lng: -93.2650, region: "North Central US" },
+            { name: "Portland", lat: 45.5152, lng: -122.6784, region: "West US 2" },
+            { name: "Houston", lat: 29.7604, lng: -95.3698, region: "South Central US" },
+            { name: "Las Vegas", lat: 36.1699, lng: -115.1398, region: "West US 3" },
+            // Europe
+            { name: "London", lat: 51.5074, lng: -0.1278, region: "UK South" },
+            { name: "Paris", lat: 48.8566, lng: 2.3522, region: "France Central" },
+            { name: "Frankfurt", lat: 50.1109, lng: 8.6821, region: "Germany West Central" },
+            { name: "Amsterdam", lat: 52.3676, lng: 4.9041, region: "West Europe" },
+            { name: "Berlin", lat: 52.5200, lng: 13.4050, region: "Germany North" },
+            { name: "Madrid", lat: 40.4168, lng: -3.7038, region: "Spain Central" },
+            { name: "Milan", lat: 45.4642, lng: 9.1900, region: "Italy North" },
+            { name: "Dublin", lat: 53.3498, lng: -6.2603, region: "North Europe" },
+            { name: "Stockholm", lat: 59.3293, lng: 18.0686, region: "Sweden Central" },
+            { name: "Vienna", lat: 48.2082, lng: 16.3738, region: "Austria East" },
+            { name: "Zurich", lat: 47.3769, lng: 8.5417, region: "Switzerland North" },
+            { name: "Warsaw", lat: 52.2297, lng: 21.0122, region: "Poland Central" },
+            { name: "Copenhagen", lat: 55.6761, lng: 12.5683, region: "Denmark East" },
+            { name: "Oslo", lat: 59.9139, lng: 10.7522, region: "Norway East" },
+            { name: "Helsinki", lat: 60.1699, lng: 24.9384, region: "Finland" },
+            { name: "Brussels", lat: 50.8503, lng: 4.3517, region: "Belgium Central" },
+            // Asia Pacific
+            { name: "Tokyo", lat: 35.6762, lng: 139.6503, region: "Japan East" },
+            { name: "Osaka", lat: 34.6937, lng: 135.5023, region: "Japan West" },
+            { name: "Singapore", lat: 1.3521, lng: 103.8198, region: "Southeast Asia" },
+            { name: "Sydney", lat: -33.8688, lng: 151.2093, region: "Australia East" },
+            { name: "Melbourne", lat: -37.8136, lng: 144.9631, region: "Australia Southeast" },
+            { name: "Hong Kong", lat: 22.3193, lng: 114.1694, region: "East Asia" },
+            { name: "Seoul", lat: 37.5665, lng: 126.9780, region: "Korea Central" },
+            { name: "Taipei", lat: 25.0330, lng: 121.5654, region: "Taiwan North" },
+            { name: "Mumbai", lat: 19.0760, lng: 72.8777, region: "South India" },
+            { name: "Bangalore", lat: 12.9716, lng: 77.5946, region: "Central India" },
+            { name: "Jakarta", lat: -6.2088, lng: 106.8456, region: "Southeast Asia" },
+            { name: "Bangkok", lat: 13.7563, lng: 100.5018, region: "Southeast Asia" },
+            { name: "Kuala Lumpur", lat: 3.1390, lng: 101.6869, region: "Southeast Asia" },
+            // Other
+            { name: "São Paulo", lat: -23.5505, lng: -46.6333, region: "Brazil South" },
+            { name: "Rio de Janeiro", lat: -22.9068, lng: -43.1729, region: "Brazil South" },
+            { name: "Toronto", lat: 43.6532, lng: -79.3832, region: "Canada Central" },
+            { name: "Vancouver", lat: 49.2827, lng: -123.1207, region: "Canada Central" },
+            { name: "Montreal", lat: 45.5017, lng: -73.5673, region: "Canada East" },
+            { name: "Mexico City", lat: 19.4326, lng: -99.1332, region: "Mexico Central" },
+            { name: "Dubai", lat: 25.2048, lng: 55.2708, region: "UAE North" },
+            { name: "Tel Aviv", lat: 32.0853, lng: 34.7818, region: "Israel Central" },
+            { name: "Cape Town", lat: -33.9249, lng: 18.4241, region: "South Africa West" },
+            { name: "Johannesburg", lat: -26.2041, lng: 28.0473, region: "South Africa North" },
+        ];
+
+        // ============================================
+        // AEZ (Azure Extended Zone) Locations
+        // AEZs are a subset of Edge POPs with direct GPU access
+        // Based on ExpressRoute Metro: https://learn.microsoft.com/azure/expressroute/metro
+        // ============================================
+        const aezLocations = [
+            // US - AEZ locations
+            { city: "Los Angeles", region: "West US", lat: 34.0522, lng: -118.2437 },
+            { city: "New York", region: "East US 2", lat: 40.7128, lng: -74.0060 },
+            { city: "Chicago", region: "North Central US", lat: 41.8781, lng: -87.6298 },
+            { city: "Dallas", region: "South Central US", lat: 32.7767, lng: -96.7970 },
+            { city: "Seattle", region: "West US 2", lat: 47.6062, lng: -122.3321 },
+            { city: "San Jose", region: "West US", lat: 37.3382, lng: -121.8863 },
+            { city: "Miami", region: "East US", lat: 25.7617, lng: -80.1918 },
+            { city: "Washington DC", region: "East US 2", lat: 38.9072, lng: -77.0369 },
+            // Europe - AEZ locations
+            { city: "London", region: "UK South", lat: 51.5074, lng: -0.1278 },
+            { city: "Amsterdam", region: "West Europe", lat: 52.3676, lng: 4.9041 },
+            { city: "Frankfurt", region: "Germany West Central", lat: 50.1109, lng: 8.6821 },
+            { city: "Paris", region: "France Central", lat: 48.8566, lng: 2.3522 },
+            { city: "Berlin", region: "Germany North", lat: 52.5200, lng: 13.4050 },
+            { city: "Madrid", region: "Spain Central", lat: 40.4168, lng: -3.7038 },
+            { city: "Milan", region: "Italy North", lat: 45.4642, lng: 9.1900 },
+            { city: "Stockholm", region: "Sweden Central", lat: 59.3293, lng: 18.0686 },
+            { city: "Zurich", region: "Switzerland North", lat: 47.3769, lng: 8.5417 },
+            { city: "Vienna", region: "Austria East", lat: 48.2082, lng: 16.3738 },
+            // Asia Pacific - AEZ locations
+            { city: "Tokyo", region: "Japan East", lat: 35.6762, lng: 139.6503 },
+            { city: "Singapore", region: "Southeast Asia", lat: 1.3521, lng: 103.8198 },
+            { city: "Sydney", region: "Australia East", lat: -33.8688, lng: 151.2093 },
+            { city: "Hong Kong", region: "East Asia", lat: 22.3193, lng: 114.1694 },
+            { city: "Seoul", region: "Korea Central", lat: 37.5665, lng: 126.9780 },
+            { city: "Osaka", region: "Japan West", lat: 34.6937, lng: 135.5023 },
+            { city: "Taipei", region: "Taiwan North", lat: 25.0330, lng: 121.5654 },
+            // Other
+            { city: "Toronto", region: "Canada Central", lat: 43.6532, lng: -79.3832 },
+            { city: "São Paulo", region: "Brazil South", lat: -23.5505, lng: -46.6333 },
+            { city: "Dubai", region: "UAE North", lat: 25.2048, lng: 55.2708 },
+        ];
+
+        // ============================================
+        // STANDARD AZURE REGIONS (for comparison)
+        // ============================================
+        const standardRegions = [
+            { city: "East US", region: "East US", lat: 37.5, lng: -79 },
+            { city: "East US 2", region: "East US 2", lat: 38.9, lng: -77.2 },
+            { city: "West US", region: "West US", lat: 37.4, lng: -122.4 },
+            { city: "West US 2", region: "West US 2", lat: 47.6, lng: -122.3 },
+            { city: "West US 3", region: "West US 3", lat: 33.4, lng: -112.1 },
+            { city: "Central US", region: "Central US", lat: 41.5, lng: -93.6 },
+            { city: "North Central US", region: "North Central US", lat: 41.9, lng: -87.6 },
+            { city: "South Central US", region: "South Central US", lat: 29.4, lng: -98.4 },
+            { city: "West Central US", region: "West Central US", lat: 39.7, lng: -104.9 },
+            { city: "Canada Central", region: "Canada Central", lat: 43.7, lng: -79.4 },
+            { city: "Canada East", region: "Canada East", lat: 45.5, lng: -73.6 },
+            { city: "Brazil South", region: "Brazil South", lat: -23.5, lng: -46.6 },
+            { city: "West Europe", region: "West Europe", lat: 52.3, lng: 4.9 },
+            { city: "North Europe", region: "North Europe", lat: 53.3, lng: -6.2 },
+            { city: "UK South", region: "UK South", lat: 51.5, lng: -0.1 },
+            { city: "France Central", region: "France Central", lat: 48.8, lng: 2.3 },
+            { city: "Germany West Central", region: "Germany West Central", lat: 50.1, lng: 8.7 },
+            { city: "Germany North", region: "Germany North", lat: 52.5, lng: 13.4 },
+            { city: "Norway East", region: "Norway East", lat: 59.9, lng: 10.8 },
+            { city: "Sweden Central", region: "Sweden Central", lat: 59.3, lng: 18.1 },
+            { city: "Southeast Asia", region: "Southeast Asia", lat: 1.3, lng: 103.8 },
+            { city: "East Asia", region: "East Asia", lat: 22.3, lng: 114.2 },
+            { city: "Japan East", region: "Japan East", lat: 35.7, lng: 139.7 },
+            { city: "Australia East", region: "Australia East", lat: -33.9, lng: 151.2 },
+        ];
+
+        // ============================================
+        // GPU RECOMMENDATIONS with rationale
+        // ============================================
+        const gpuRecommendations = {
+            llm: { 
+                name: 'NC A100 v4', 
+                vcpus: '24-48', 
+                memory: '880 GB/s',
+                rationale: 'The NC A100 v4 series is optimized for large language models with high token throughput. The A100 GPUs offer excellent FP16/FP32 performance for inference with large context windows. The 880 GB/s memory bandwidth ensures fast KV cache retrieval for long-context models.'
+            },
+            embedding: { 
+                name: 'NCads A100 v4', 
+                vcpus: '12-24', 
+                memory: '2 TB SSD',
+                rationale: 'The NCads A100 v4 provides the best price-performance for embedding workloads. With local SSD storage, it\'s ideal for vector databases and high-throughput batch embedding generation. The lower vCPU count keeps costs down for batch processing.'
+            },
+            image: { 
+                name: 'ND A100 v4', 
+                vcpus: '32-64', 
+                memory: '1.6 TB',
+                rationale: 'The ND A100 v4 is designed for distributed inference with multiple GPUs. Image generation models like Stable Diffusion benefit from the high GPU memory (1.6 TB) to hold larger models and use techniques like LoRA. The 32-64 vCPUs handle preprocessing efficiently.'
+            },
+            speech: { 
+                name: 'NC A100 v4', 
+                vcpus: '16-32', 
+                memory: '880 GB/s',
+                rationale: 'Speech workloads require low latency for real-time transcription and TTS. The NC A100 v4 provides the perfect balance of compute and memory bandwidth. The 880 GB/s memory bandwidth ensures fast audio buffer processing with minimal jitter.'
+            },
+            realtime: { 
+                name: 'NC A100 v4', 
+                vcpus: '16-32', 
+                memory: '880 GB/s',
+                rationale: 'Real-time inference demands consistent low latency. The NC A100 v4 offers the best latency characteristics with direct GPU access. The balanced vCPU-to-GPU ratio ensures the CPU doesn\'t become a bottleneck for request preprocessing.'
+            }
+        };
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        // Haversine distance in km
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Speed of light in fiber (~200,000 km/s effective)
+        const SPEED_OF_LIGHT = 200000; // km/s
+
+        // Calculate latency: distance / speed + fixed overhead
+        function calculateLatency(distanceKm) {
+            const propagationDelay = (distanceKm / SPEED_OF_LIGHT) * 1000; // ms
+            const networkOverhead = 1.5; // ms for routing, switching at Edge POP
+            return Math.round(propagationDelay + networkOverhead);
+        }
+
+        // Fuzzy city matching
+        function fuzzyMatch(input, cities) {
+            const lowerInput = input.toLowerCase();
+            return cities
+                .map(city => {
+                    const lowerName = city.name.toLowerCase();
+                    let score = 0;
+                    
+                    // Exact match
+                    if (lowerName === lowerInput) score = 100;
+                    // Starts with
+                    else if (lowerName.startsWith(lowerInput)) score = 80;
+                    // Contains
+                    else if (lowerName.includes(lowerInput)) score = 60;
+                    // Fuzzy (edit distance would be better, but this works for now)
+                    else if (lowerInput.length > 2 && lowerName.substring(0, lowerInput.length) === lowerInput.substring(0, 2)) score = 40;
+                    else score = 0;
+                    
+                    return { ...city, score };
+                })
+                .filter(c => c.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 8);
+        }
+
+        // Find closest Edge POP from user location
+        function findClosestEdgePOP(userLat, userLng) {
+            let closest = null;
+            let minDist = Infinity;
+            
+            for (const pop of edgePOPs) {
+                const dist = haversineDistance(userLat, userLng, pop.lat, pop.lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = pop;
+                }
+            }
+            
+            return { pop: closest, distance: minDist };
+        }
+
+        // Find closest AEZ from the Edge POP (not user location)
+        // This models: User → Edge POP (via their own network) → AEZ (via ExpressRoute)
+        function findClosestAEZFromEdge(edgePop) {
+            let closest = null;
+            let minDist = Infinity;
+            
+            for (const aez of aezLocations) {
+                const dist = haversineDistance(edgePop.lat, edgePop.lng, aez.lat, aez.lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = aez;
+                }
+            }
+            
+            return { aez: closest, distance: minDist };
+        }
+
+        // Find closest standard region from the Edge POP
+        function findClosestRegionFromEdge(edgePop) {
+            let closest = null;
+            let minDist = Infinity;
+            
+            for (const region of standardRegions) {
+                const dist = haversineDistance(edgePop.lat, edgePop.lng, region.lat, region.lng);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = region;
+                }
+            }
+            
+            return { region: closest, distance: minDist };
+        }
+
+        // ============================================
+        // UI HANDLERS
+        // ============================================
+
+        let selectedCity = null;
+
+        const cityInput = document.getElementById('city');
+        const dropdown = document.getElementById('cityDropdown');
+
+        cityInput.addEventListener('input', function() {
+            const input = this.value.trim();
+            if (input.length < 2) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            const matches = fuzzyMatch(input, cities);
+            
+            if (matches.length === 0) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            dropdown.innerHTML = matches.map(city => `
+                <div class="autocomplete-item" data-name="${city.name}" data-country="${city.country}" data-lat="${city.lat}" data-lng="${city.lng}">
+                    <span class="autocomplete-city">${city.name}</span>
+                    <span class="autocomplete-country">${city.country}</span>
+                </div>
+            `).join('');
+
+            dropdown.classList.add('show');
+        });
+
+        dropdown.addEventListener('click', function(e) {
+            const item = e.target.closest('.autocomplete-item');
+            if (item) {
+                selectedCity = {
+                    name: item.dataset.name,
+                    country: item.dataset.country,
+                    lat: parseFloat(item.dataset.lat),
+                    lng: parseFloat(item.dataset.lng)
+                };
+                cityInput.value = `${selectedCity.name}, ${selectedCity.country}`;
+                dropdown.classList.remove('show');
+                document.getElementById('calculateBtn').disabled = false;
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.autocomplete-wrapper')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // ============================================
+        // MAIN CALCULATION
+        // ============================================
+
+        function calculate() {
+            const workload = document.getElementById('workload').value;
+            const targetLatency = parseInt(document.getElementById('latency').value);
+
+            if (!selectedCity || !workload || !targetLatency) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            // Step 1: Find closest Edge POP from user location
+            // This is where customer will peer with Microsoft via ExpressRoute
+            const edgeInfo = findClosestEdgePOP(selectedCity.lat, selectedCity.lng);
+            
+            // Step 2: From Edge POP, find closest AEZ and standard region
+            // This models the path: User → Edge POP → Azure (via ExpressRoute)
+            const aezFromEdge = findClosestAEZFromEdge(edgeInfo.pop);
+            const regionFromEdge = findClosestRegionFromEdge(edgeInfo.pop);
+
+            // Step 3: Calculate latencies (Edge POP → AEZ/Region)
+            const edgeToAEZ = calculateLatency(aezFromEdge.distance);
+            const edgeToRegion = calculateLatency(regionFromEdge.distance);
+
+            // Decision logic
+            let recommended, deploymentType, explanation;
+
+            if (edgeToAEZ < targetLatency) {
+                // AEZ meets the latency requirement
+                recommended = aezFromEdge.aez;
+                deploymentType = 'AEZ';
+                explanation = `Your target latency is <strong>${targetLatency}ms</strong>. ` +
+                    `From your nearest Edge POP in <strong>${edgeInfo.pop.name}</strong>, ` +
+                    `the closest AEZ is <strong>${aezFromEdge.aez.city}</strong> at <strong>${edgeToAEZ}ms</strong>. ` +
+                    `This meets your latency requirement, so we recommend an <strong>Azure Extended Zone (AEZ)</strong>. ` +
+                    `AEZs provide direct GPU access with minimal network hops, ideal for latency-sensitive AI inference.`;
+            } else if (edgeToRegion < targetLatency) {
+                // Standard region meets the latency requirement
+                recommended = regionFromEdge.region;
+                deploymentType = 'Region';
+                explanation = `Your target latency is <strong>${targetLatency}ms</strong>. ` +
+                    `From your nearest Edge POP in <strong>${edgeInfo.pop.name}</strong>, ` +
+                    `the closest AEZ (${aezFromEdge.aez.city}) is at <strong>${edgeToAEZ}ms</strong>, which exceeds your requirement. ` +
+                    `However, the standard region <strong>${regionFromEdge.region.region}</strong> is at <strong>${edgeToRegion}ms</strong>, which meets your target. ` +
+                    `We've recommended a standard Azure region instead, which offers more VM sizes and often better pricing.`;
+            } else {
+                // Neither meets the requirement
+                recommended = aezFromEdge.aez;
+                deploymentType = 'AEZ';
+                explanation = `Your target latency is <strong>${targetLatency}ms</strong>, but both AEZ and standard regions exceed this. ` +
+                    `From Edge POP <strong>${edgeInfo.pop.name}</strong>, the closest option is <strong>${aezFromEdge.aez.region}</strong> at <strong>${edgeToAEZ}ms</strong>. ` +
+                    `For strict latency requirements, consider: (1) Using edge computing closer to your users, ` +
+                    `(2) Deploying in a region nearer to your users, or (3) Accepting higher latency.`;
+            }
+
+            // Get GPU recommendation
+            const gpu = gpuRecommendations[workload];
+
+            // Update UI
+            document.getElementById('userLocation').textContent = `${selectedCity.name}, ${selectedCity.country}`;
+            document.getElementById('estLatency').textContent = `${Math.min(edgeToAEZ, edgeToRegion)}ms`;
+            document.getElementById('region').textContent = recommended.region;
+            document.getElementById('gpu').textContent = gpu.name;
+
+            const badge = document.getElementById('deploymentType');
+            badge.textContent = deploymentType;
+            badge.className = 'badge ' + (deploymentType === 'AEZ' ? 'badge-aez' : 'badge-region');
+
+            // Latency breakdown - show the hop-by-hop path
+            document.getElementById('latencyBreakdown').innerHTML = `
+                <div class="latency-item">
+                    <div class="latency-item-label">${selectedCity.name} → Edge POP (${edgeInfo.pop.name})</div>
+                    <div class="latency-item-value">${Math.round(edgeInfo.distance)}km</div>
+                </div>
+                <div class="latency-item">
+                    <div class="latency-item-label">Edge POP → AEZ (${aezFromEdge.aez.city})</div>
+                    <div class="latency-item-value">${edgeToAEZ}ms</div>
+                </div>
+                <div class="latency-item">
+                    <div class="latency-item-label">Edge POP → Region (${regionFromEdge.region.region})</div>
+                    <div class="latency-item-value">${edgeToRegion}ms</div>
+                </div>
+            `;
+
+            document.getElementById('explanationText').innerHTML = explanation;
+            document.getElementById('gpuRationale').textContent = gpu.rationale;
+
+            // Show result
+            document.getElementById('result').classList.add('show');
+        }
+    </script>
+</body>
+</html>
+
+        label {
+            display: block;
+            color: #ccd6f6;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #64ffda;
+            box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .btn-calculate {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #64ffda 0%, #00b4d8 100%);
+            border: none;
+            border-radius: 8px;
+            color: #1a1a2e;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-calculate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(100, 255, 218, 0.3);
+        }
+
+        .result {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1) 0%, rgba(0, 180, 216, 0.1) 100%);
+            border: 1px solid rgba(100, 255, 218, 0.3);
+        }
+
+        .result-title {
+            color: #64ffda;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .result-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .result-label {
+            color: #8892b0;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .result-value {
+            color: #fff;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .result-value.highlight {
+            color: #64ffda;
+        }
+
+        .explanation {
+            margin-top: 24px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border-left: 4px solid #64ffda;
+        }
+
+        .explanation h3 {
+            color: #fff;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .explanation p {
+            color: #8892b0;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .badge-aez {
+            background: rgba(100, 255, 218, 0.2);
+            color: #64ffda;
+        }
+
+        .badge-region {
+            background: rgba(0, 180, 216, 0.2);
+            color: #00b4d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Azure Inference Calculator</h1>
+        <p class="subtitle">Find the best Azure region for your AI inference workload</p>
+
+        <div class="card">
+            <div class="form-group">
+                <label for="workload">🎯 Workload Type</label>
+                <select id="workload">
+                    <option value="">Select your workload...</option>
+                    <option value="llm">Large Language Model (LLM)</option>
+                    <option value="embedding">Text Embedding</option>
+                    <option value="image">Image Generation</option>
+                    <option value="speech">Speech/Text-to-Speech</option>
+                    <option value="realtime">Real-time Inference</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="latency">⏱️ Target Latency (ms)</label>
+                <input type="number" id="latency" placeholder="e.g., 15" min="1" max="1000">
+            </div>
+
+            <div class="form-group">
+                <label for="geography">🌍 Geography</label>
+                <select id="geography">
+                    <option value="">Select region...</option>
+                    <option value="us">United States</option>
+                    <option value="eu">Europe</option>
+                    <option value="asia">Asia Pacific</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <button class="btn-calculate" onclick="calculate()">Calculate Recommendation</button>
+        </div>
+
+        <div class="card result" id="result">
+            <div class="result-title">
+                <span>🎯 Recommendation</span>
+                <span class="badge" id="deploymentType"></span>
+            </div>
+            
+            <div class="result-grid">
+                <div class="result-item">
+                    <div class="result-label">Recommended Region</div>
+                    <div class="result-value highlight" id="region">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">GPU Recommendation</div>
+                    <div class="result-value" id="gpu">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">Estimated vCPUs</div>
+                    <div class="result-value" id="vcpus">-</div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <h3>📖 Why this recommendation?</h3>
+                <p id="explanationText"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // GPU recommendations based on workload
+        const gpuRecommendations = {
+            llm: { name: 'NC A100 v4', vcpus: '24-48', reason: 'Best for large language models with high throughput needs' },
+            embedding: { name: 'NCads A100 v4', vcpus: '12-24', reason: 'Cost-effective for embedding generation' },
+            image: { name: 'ND A100 v4', vcpus: '32-64', reason: 'High memory for image generation models' },
+            speech: { name: 'NC A100 v4', vcpus: '16-32', reason: 'Low latency for real-time speech processing' },
+            realtime: { name: 'NC A100 v4', vcpus: '16-32', reason: 'Optimized for real-time inference' }
+        };
+
+        // Region mappings
+        const regionMappings = {
+            us: { aez: 'East US 2', region: 'West US 3', aezReason: 'AEZ available in East US 2', regionReason: 'Standard region in West US 3' },
+            eu: { aez: 'Sweden Central', region: 'West Europe', aezReason: 'AEZ available in Sweden Central', regionReason: 'Standard region in West Europe' },
+            asia: { aez: 'Southeast Asia', region: 'East Asia', aezReason: 'AEZ available in Southeast Asia', regionReason: 'Standard region in East Asia' },
+            other: { aez: 'East US 2', region: 'Central US', aezReason: 'Default AEZ in East US 2', regionReason: 'Default region in Central US' }
+        };
+
+        function calculate() {
+            const workload = document.getElementById('workload').value;
+            const latency = parseInt(document.getElementById('latency').value);
+            const geography = document.getElementById('geography').value;
+
+            // Validation
+            if (!workload || !latency || !geography) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            // Get GPU recommendation
+            const gpu = gpuRecommendations[workload];
+            
+            // Get region mapping
+            const geo = regionMappings[geography];
+
+            // Decision logic: AEZ vs Region
+            let recommendedRegion, deploymentType, explanation;
+
+            if (latency < 20) {
+                // AEZ recommendation for low latency
+                recommendedRegion = geo.aez;
+                deploymentType = 'AEZ';
+                explanation = `With a target latency of ${latency}ms, we recommend an <strong>Azure Exposed Endpoint (AEZ)</strong> in ${geo.aez}. ` +
+                    `AEZ provides direct GPU access with minimal network hops, ideal for latency-sensitive workloads. ` +
+                    `${gpu.reason}`;
+            } else {
+                // Standard region for higher latency
+                recommendedRegion = geo.region;
+                deploymentType = 'Region';
+                explanation = `With a target latency of ${latency}ms, a <strong>standard Azure region</strong> in ${geo.region} is recommended. ` +
+                    `Standard regions offer more VM sizes and often better pricing for latency-tolerant workloads. ` +
+                    `${gpu.reason}`;
+            }
+
+            // Update UI
+            document.getElementById('region').textContent = recommendedRegion;
+            document.getElementById('gpu').textContent = gpu.name;
+            document.getElementById('vcpus').textContent = gpu.vcpus;
+            document.getElementById('explanationText').innerHTML = explanation;
+
+            const badge = document.getElementById('deploymentType');
+            badge.textContent = deploymentType;
+            badge.className = 'badge ' + (deploymentType === 'AEZ' ? 'badge-aez' : 'badge-region');
+
+            // Show result
+            document.getElementById('result').classList.add('show');
+        }
+    </script>
+</body>
+</html>
