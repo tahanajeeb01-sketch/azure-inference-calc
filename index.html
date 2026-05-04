@@ -551,13 +551,13 @@
 
         // ============================================
         // AEZ (Azure Extended Zone) Locations
-        // IMPORTANT: this list must be populated with the current live AEZ locations.
-        // If you have the actual current AEZ locations, please provide them and I will
-        // encode the exact supported cities/regions here.
+        // Live AEZ locations provided by the user.
+        // Only these AEZ locations should be used in the recommendation logic.
         // ============================================
         const aezLocations = [
-            // Example format:
-            // { city: "Singapore", region: "Southeast Asia", lat: 1.3521, lng: 103.8198 },
+            { city: "Los Angeles", region: "West US", lat: 34.0522, lng: -118.2437 },
+            { city: "Perth", region: "Australia East", lat: -31.9505, lng: 115.8605 },
+            { city: "Luxembourg", region: "West Europe", lat: 49.6116, lng: 6.1319 },
         ];
 
         // ============================================
