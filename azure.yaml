@@ -4,7 +4,7 @@
 name: inference-calc
 services:
   web:
-    project: ./index.html
+    project: .
     host: static
     hooks:
       post-deploy:

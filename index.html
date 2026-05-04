@@ -672,6 +672,13 @@
         }
 
         // Speed of light in fiber (~200,000 km/s effective)
+        /**
+         * LATENCY CALCULATION ASSUMPTIONS:
+         * - Speed of light in fiber: 200,000 km/s (realistic for modern networks)
+         * - Network overhead: 1.5ms (accounts for routing/switching at Edge POP)
+         * - DOES NOT include: user→Edge POP latency, ISP routing, congestion
+         * - For production: Use Azure Network Watcher to measure actual latency
+         */
         const SPEED_OF_LIGHT = 200000; // km/s
 
         // Calculate latency: distance / speed + fixed overhead
@@ -696,7 +703,7 @@
                     // Contains
                     else if (lowerName.includes(lowerInput)) score = 60;
                     // Fuzzy (edit distance would be better, but this works for now)
-                    else if (lowerInput.length > 2 && lowerName.substring(0, lowerInput.length) === lowerInput.substring(0, 2)) score = 40;
+                    else if (lowerInput.length > 1 && lowerName.substring(0, 2) === lowerInput.substring(0, 2)) score = 40;
                     else score = 0;
                     
                     return { ...city, score };
@@ -822,6 +829,25 @@
                 return;
             }
 
+            // Validate workload is supported
+            if (!gpuRecommendations[workload]) {
+                alert('Invalid workload type');
+                return;
+            }
+
+            // Validate latency range
+            if (targetLatency < 1 || targetLatency > 1000 || isNaN(targetLatency)) {
+                alert('Latency must be between 1-1000 ms');
+                return;
+            }
+
+            // Validate city coordinates
+            if (!selectedCity.lat || !selectedCity.lng || 
+                isNaN(selectedCity.lat) || isNaN(selectedCity.lng)) {
+                alert('Invalid city coordinates');
+                return;
+            }
+
             // Step 1: Find closest Edge POP from user location
             // This is where customer will peer with Microsoft via ExpressRoute
             const edgeInfo = findClosestEdgePOP(selectedCity.lat, selectedCity.lng);
@@ -895,286 +921,10 @@
                 </div>
             `;
 
+            // Safe to use innerHTML here - explanation is built from hardcoded data arrays
+            // No user input is directly inserted, only predefined city/region names
             document.getElementById('explanationText').innerHTML = explanation;
             document.getElementById('gpuRationale').textContent = gpu.rationale;
-
-            // Show result
-            document.getElementById('result').classList.add('show');
-        }
-    </script>
-</body>
-</html>
-
-        label {
-            display: block;
-            color: #ccd6f6;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        select, input {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.08);
-            color: #fff;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        select:focus, input:focus {
-            outline: none;
-            border-color: #64ffda;
-            box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
-        }
-
-        select option {
-            background: #1a1a2e;
-            color: #fff;
-        }
-
-        .btn-calculate {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #64ffda 0%, #00b4d8 100%);
-            border: none;
-            border-radius: 8px;
-            color: #1a1a2e;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .btn-calculate:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(100, 255, 218, 0.3);
-        }
-
-        .result {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .result.show {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .result-card {
-            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1) 0%, rgba(0, 180, 216, 0.1) 100%);
-            border: 1px solid rgba(100, 255, 218, 0.3);
-        }
-
-        .result-title {
-            color: #64ffda;
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .result-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .result-item {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            border-radius: 12px;
-        }
-
-        .result-label {
-            color: #8892b0;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .result-value {
-            color: #fff;
-            font-size: 1.4rem;
-            font-weight: 600;
-        }
-
-        .result-value.highlight {
-            color: #64ffda;
-        }
-
-        .explanation {
-            margin-top: 24px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            border-left: 4px solid #64ffda;
-        }
-
-        .explanation h3 {
-            color: #fff;
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-        }
-
-        .explanation p {
-            color: #8892b0;
-            line-height: 1.6;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .badge-aez {
-            background: rgba(100, 255, 218, 0.2);
-            color: #64ffda;
-        }
-
-        .badge-region {
-            background: rgba(0, 180, 216, 0.2);
-            color: #00b4d8;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>⚡ Azure Inference Calculator</h1>
-        <p class="subtitle">Find the best Azure region for your AI inference workload</p>
-
-        <div class="card">
-            <div class="form-group">
-                <label for="workload">🎯 Workload Type</label>
-                <select id="workload">
-                    <option value="">Select your workload...</option>
-                    <option value="llm">Large Language Model (LLM)</option>
-                    <option value="embedding">Text Embedding</option>
-                    <option value="image">Image Generation</option>
-                    <option value="speech">Speech/Text-to-Speech</option>
-                    <option value="realtime">Real-time Inference</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="latency">⏱️ Target Latency (ms)</label>
-                <input type="number" id="latency" placeholder="e.g., 15" min="1" max="1000">
-            </div>
-
-            <div class="form-group">
-                <label for="geography">🌍 Geography</label>
-                <select id="geography">
-                    <option value="">Select region...</option>
-                    <option value="us">United States</option>
-                    <option value="eu">Europe</option>
-                    <option value="asia">Asia Pacific</option>
-                    <option value="other">Other</option>
-                </select>
-            </div>
-
-            <button class="btn-calculate" onclick="calculate()">Calculate Recommendation</button>
-        </div>
-
-        <div class="card result" id="result">
-            <div class="result-title">
-                <span>🎯 Recommendation</span>
-                <span class="badge" id="deploymentType"></span>
-            </div>
-            
-            <div class="result-grid">
-                <div class="result-item">
-                    <div class="result-label">Recommended Region</div>
-                    <div class="result-value highlight" id="region">-</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">GPU Recommendation</div>
-                    <div class="result-value" id="gpu">-</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">Estimated vCPUs</div>
-                    <div class="result-value" id="vcpus">-</div>
-                </div>
-            </div>
-
-            <div class="explanation">
-                <h3>📖 Why this recommendation?</h3>
-                <p id="explanationText"></p>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // GPU recommendations based on workload
-        const gpuRecommendations = {
-            llm: { name: 'NC A100 v4', vcpus: '24-48', reason: 'Best for large language models with high throughput needs' },
-            embedding: { name: 'NCads A100 v4', vcpus: '12-24', reason: 'Cost-effective for embedding generation' },
-            image: { name: 'ND A100 v4', vcpus: '32-64', reason: 'High memory for image generation models' },
-            speech: { name: 'NC A100 v4', vcpus: '16-32', reason: 'Low latency for real-time speech processing' },
-            realtime: { name: 'NC A100 v4', vcpus: '16-32', reason: 'Optimized for real-time inference' }
-        };
-
-        // Region mappings
-        const regionMappings = {
-            us: { aez: 'East US 2', region: 'West US 3', aezReason: 'AEZ available in East US 2', regionReason: 'Standard region in West US 3' },
-            eu: { aez: 'Sweden Central', region: 'West Europe', aezReason: 'AEZ available in Sweden Central', regionReason: 'Standard region in West Europe' },
-            asia: { aez: 'Southeast Asia', region: 'East Asia', aezReason: 'AEZ available in Southeast Asia', regionReason: 'Standard region in East Asia' },
-            other: { aez: 'East US 2', region: 'Central US', aezReason: 'Default AEZ in East US 2', regionReason: 'Default region in Central US' }
-        };
-
-        function calculate() {
-            const workload = document.getElementById('workload').value;
-            const latency = parseInt(document.getElementById('latency').value);
-            const geography = document.getElementById('geography').value;
-
-            // Validation
-            if (!workload || !latency || !geography) {
-                alert('Please fill in all fields');
-                return;
-            }
-
-            // Get GPU recommendation
-            const gpu = gpuRecommendations[workload];
-            
-            // Get region mapping
-            const geo = regionMappings[geography];
-
-            // Decision logic: AEZ vs Region
-            let recommendedRegion, deploymentType, explanation;
-
-            if (latency < 20) {
-                // AEZ recommendation for low latency
-                recommendedRegion = geo.aez;
-                deploymentType = 'AEZ';
-                explanation = `With a target latency of ${latency}ms, we recommend an <strong>Azure Exposed Endpoint (AEZ)</strong> in ${geo.aez}. ` +
-                    `AEZ provides direct GPU access with minimal network hops, ideal for latency-sensitive workloads. ` +
-                    `${gpu.reason}`;
-            } else {
-                // Standard region for higher latency
-                recommendedRegion = geo.region;
-                deploymentType = 'Region';
-                explanation = `With a target latency of ${latency}ms, a <strong>standard Azure region</strong> in ${geo.region} is recommended. ` +
-                    `Standard regions offer more VM sizes and often better pricing for latency-tolerant workloads. ` +
-                    `${gpu.reason}`;
-            }
-
-            // Update UI
-            document.getElementById('region').textContent = recommendedRegion;
-            document.getElementById('gpu').textContent = gpu.name;
-            document.getElementById('vcpus').textContent = gpu.vcpus;
-            document.getElementById('explanationText').innerHTML = explanation;
-
-            const badge = document.getElementById('deploymentType');
-            badge.textContent = deploymentType;
-            badge.className = 'badge ' + (deploymentType === 'AEZ' ? 'badge-aez' : 'badge-region');
 
             // Show result
             document.getElementById('result').classList.add('show');
