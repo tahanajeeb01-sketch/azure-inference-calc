@@ -551,8 +551,8 @@
 
         // ============================================
         // AEZ (Azure Extended Zone) Locations
-        // AEZs are a subset of Edge POPs with direct GPU access
-        // Based on ExpressRoute Metro: https://learn.microsoft.com/azure/expressroute/metro
+        // AEZs are intentionally limited in this model to known supported metro regions.
+        // Tokyo does not currently have a public AEZ deployment, so it is not included here.
         // ============================================
         const aezLocations = [
             // US - AEZ locations
@@ -575,18 +575,6 @@
             { city: "Stockholm", region: "Sweden Central", lat: 59.3293, lng: 18.0686 },
             { city: "Zurich", region: "Switzerland North", lat: 47.3769, lng: 8.5417 },
             { city: "Vienna", region: "Austria East", lat: 48.2082, lng: 16.3738 },
-            // Asia Pacific - AEZ locations
-            { city: "Tokyo", region: "Japan East", lat: 35.6762, lng: 139.6503 },
-            { city: "Singapore", region: "Southeast Asia", lat: 1.3521, lng: 103.8198 },
-            { city: "Sydney", region: "Australia East", lat: -33.8688, lng: 151.2093 },
-            { city: "Hong Kong", region: "East Asia", lat: 22.3193, lng: 114.1694 },
-            { city: "Seoul", region: "Korea Central", lat: 37.5665, lng: 126.9780 },
-            { city: "Osaka", region: "Japan West", lat: 34.6937, lng: 135.5023 },
-            { city: "Taipei", region: "Taiwan North", lat: 25.0330, lng: 121.5654 },
-            // Other
-            { city: "Toronto", region: "Canada Central", lat: 43.6532, lng: -79.3832 },
-            { city: "São Paulo", region: "Brazil South", lat: -23.5505, lng: -46.6333 },
-            { city: "Dubai", region: "UAE North", lat: 25.2048, lng: 55.2708 },
         ];
 
         // ============================================
