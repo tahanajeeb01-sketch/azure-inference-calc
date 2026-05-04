@@ -339,7 +339,7 @@
             <div class="form-group">
                 <label for="city">📍 Your Location (City)</label>
                 <div class="autocomplete-wrapper">
-                    <input type="text" id="city" placeholder="e.g., Los Angeles, London, Tokyo..." autocomplete="off">
+                    <input type="text" id="city" placeholder="e.g., Los Angeles, London, Singapore..." autocomplete="off">
                     <div class="autocomplete-dropdown" id="cityDropdown"></div>
                 </div>
             </div>
@@ -551,30 +551,13 @@
 
         // ============================================
         // AEZ (Azure Extended Zone) Locations
-        // AEZs are intentionally limited in this model to known supported metro regions.
-        // Tokyo does not currently have a public AEZ deployment, so it is not included here.
+        // IMPORTANT: this list must be populated with the current live AEZ locations.
+        // If you have the actual current AEZ locations, please provide them and I will
+        // encode the exact supported cities/regions here.
         // ============================================
         const aezLocations = [
-            // US - AEZ locations
-            { city: "Los Angeles", region: "West US", lat: 34.0522, lng: -118.2437 },
-            { city: "New York", region: "East US 2", lat: 40.7128, lng: -74.0060 },
-            { city: "Chicago", region: "North Central US", lat: 41.8781, lng: -87.6298 },
-            { city: "Dallas", region: "South Central US", lat: 32.7767, lng: -96.7970 },
-            { city: "Seattle", region: "West US 2", lat: 47.6062, lng: -122.3321 },
-            { city: "San Jose", region: "West US", lat: 37.3382, lng: -121.8863 },
-            { city: "Miami", region: "East US", lat: 25.7617, lng: -80.1918 },
-            { city: "Washington DC", region: "East US 2", lat: 38.9072, lng: -77.0369 },
-            // Europe - AEZ locations
-            { city: "London", region: "UK South", lat: 51.5074, lng: -0.1278 },
-            { city: "Amsterdam", region: "West Europe", lat: 52.3676, lng: 4.9041 },
-            { city: "Frankfurt", region: "Germany West Central", lat: 50.1109, lng: 8.6821 },
-            { city: "Paris", region: "France Central", lat: 48.8566, lng: 2.3522 },
-            { city: "Berlin", region: "Germany North", lat: 52.5200, lng: 13.4050 },
-            { city: "Madrid", region: "Spain Central", lat: 40.4168, lng: -3.7038 },
-            { city: "Milan", region: "Italy North", lat: 45.4642, lng: 9.1900 },
-            { city: "Stockholm", region: "Sweden Central", lat: 59.3293, lng: 18.0686 },
-            { city: "Zurich", region: "Switzerland North", lat: 47.3769, lng: 8.5417 },
-            { city: "Vienna", region: "Austria East", lat: 48.2082, lng: 16.3738 },
+            // Example format:
+            // { city: "Singapore", region: "Southeast Asia", lat: 1.3521, lng: 103.8198 },
         ];
 
         // ============================================
@@ -731,6 +714,9 @@
                 }
             }
             
+            if (!closest) {
+                return null;
+            }
             return { aez: closest, distance: minDist };
         }
 
@@ -846,38 +832,46 @@
             const regionFromEdge = findClosestRegionFromEdge(edgeInfo.pop);
 
             // Step 3: Calculate latencies (Edge POP → AEZ/Region)
-            const edgeToAEZ = calculateLatency(aezFromEdge.distance);
+            const edgeToAEZ = aezFromEdge ? calculateLatency(aezFromEdge.distance) : Infinity;
             const edgeToRegion = calculateLatency(regionFromEdge.distance);
 
             // Decision logic
             let recommended, deploymentType, explanation;
+            const regionLabel = regionFromEdge.region.region;
 
-            if (edgeToAEZ < targetLatency) {
-                // AEZ meets the latency requirement
+            if (aezFromEdge && edgeToAEZ <= targetLatency && edgeToAEZ <= edgeToRegion) {
+                // AEZ is available and is the best on latency within budget
                 recommended = aezFromEdge.aez;
                 deploymentType = 'AEZ';
                 explanation = `Your target latency is <strong>${targetLatency}ms</strong>. ` +
                     `From your nearest Edge POP in <strong>${edgeInfo.pop.name}</strong>, ` +
                     `the closest AEZ is <strong>${aezFromEdge.aez.city}</strong> at <strong>${edgeToAEZ}ms</strong>. ` +
-                    `This meets your latency requirement, so we recommend an <strong>Azure Extended Zone (AEZ)</strong>. ` +
-                    `AEZs provide direct GPU access with minimal network hops, ideal for latency-sensitive AI inference.`;
-            } else if (edgeToRegion < targetLatency) {
-                // Standard region meets the latency requirement
+                    `This satisfies your latency goal, so we recommend the Azure Extended Zone (AEZ) path. ` +
+                    `AEZs are only recommended when a live AEZ location exists and the latency budget is met.`;
+            } else if (edgeToRegion <= targetLatency) {
+                // Standard region is within budget and preferable when AEZ isn't available or not faster
                 recommended = regionFromEdge.region;
                 deploymentType = 'Region';
                 explanation = `Your target latency is <strong>${targetLatency}ms</strong>. ` +
-                    `From your nearest Edge POP in <strong>${edgeInfo.pop.name}</strong>, ` +
-                    `the closest AEZ (${aezFromEdge.aez.city}) is at <strong>${edgeToAEZ}ms</strong>, which exceeds your requirement. ` +
-                    `However, the standard region <strong>${regionFromEdge.region.region}</strong> is at <strong>${edgeToRegion}ms</strong>, which meets your target. ` +
-                    `We've recommended a standard Azure region instead, which offers more VM sizes and often better pricing.`;
+                    `From your nearest Edge POP in <strong>${edgeInfo.pop.name}</strong>, the closest Azure region is <strong>${regionLabel}</strong> at <strong>${edgeToRegion}ms</strong>. `;
+                if (aezFromEdge) {
+                    explanation += `The closest AEZ is <strong>${aezFromEdge.aez.city}</strong> at <strong>${edgeToAEZ}ms</strong>, which is not the best choice for this latency budget. `;
+                } else {
+                    explanation += `No current AEZ location is configured for this path, so the standard region is the best option. `;
+                }
+                explanation += `We've recommended the standard Azure region because it meets your latency requirement.`;
             } else {
-                // Neither meets the requirement
-                recommended = aezFromEdge.aez;
-                deploymentType = 'AEZ';
-                explanation = `Your target latency is <strong>${targetLatency}ms</strong>, but both AEZ and standard regions exceed this. ` +
-                    `From Edge POP <strong>${edgeInfo.pop.name}</strong>, the closest option is <strong>${aezFromEdge.aez.region}</strong> at <strong>${edgeToAEZ}ms</strong>. ` +
-                    `For strict latency requirements, consider: (1) Using edge computing closer to your users, ` +
-                    `(2) Deploying in a region nearer to your users, or (3) Accepting higher latency.`;
+                // No path meets the latency requirement
+                recommended = regionFromEdge.region;
+                deploymentType = 'Region';
+                explanation = `Your target latency is <strong>${targetLatency}ms</strong>, but the closest available options exceed it. ` +
+                    `The closest Azure region is <strong>${regionLabel}</strong> at <strong>${edgeToRegion}ms</strong>. `;
+                if (aezFromEdge) {
+                    explanation += `The closest AEZ is <strong>${aezFromEdge.aez.city}</strong> at <strong>${edgeToAEZ}ms</strong>, so there is no live AEZ within your latency budget. `;
+                } else {
+                    explanation += `There is no configured AEZ location on this path, so standard region is the fallback. `;
+                }
+                explanation += `Consider a closer region, a different edge location, or a higher latency target.`;
             }
 
             // Get GPU recommendation
@@ -894,14 +888,17 @@
             badge.className = 'badge ' + (deploymentType === 'AEZ' ? 'badge-aez' : 'badge-region');
 
             // Latency breakdown - show the hop-by-hop path
+            const aezLabel = aezFromEdge ? `Edge POP → AEZ (${aezFromEdge.aez.city})` : 'Edge POP → AEZ (No AEZ configured)';
+            const aezValue = aezFromEdge ? `${edgeToAEZ}ms` : 'N/A';
+
             document.getElementById('latencyBreakdown').innerHTML = `
                 <div class="latency-item">
                     <div class="latency-item-label">${selectedCity.name} → Edge POP (${edgeInfo.pop.name})</div>
                     <div class="latency-item-value">${Math.round(edgeInfo.distance)}km</div>
                 </div>
                 <div class="latency-item">
-                    <div class="latency-item-label">Edge POP → AEZ (${aezFromEdge.aez.city})</div>
-                    <div class="latency-item-value">${edgeToAEZ}ms</div>
+                    <div class="latency-item-label">${aezLabel}</div>
+                    <div class="latency-item-value">${aezValue}</div>
                 </div>
                 <div class="latency-item">
                     <div class="latency-item-label">Edge POP → Region (${regionFromEdge.region.region})</div>
