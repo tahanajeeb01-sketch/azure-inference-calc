@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparison Problem Builder</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f1f7fb;
+            color: #102a43;
+            min-height: 100vh;
+            padding: 24px;
+        }
+        .page {
+            max-width: 760px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 8px;
+            font-size: 2rem;
+        }
+        p.subtitle {
+            margin-bottom: 24px;
+            color: #334e68;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 16px 40px rgba(16, 42, 67, 0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid #d9e2ec;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #102a43;
+        }
+        textarea {
+            width: 100%;
+            min-height: 110px;
+            border: 1px solid #bcccdc;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 1rem;
+            resize: vertical;
+            box-shadow: inset 0 1px 2px rgba(16, 42, 67, 0.08);
+            color: #102a43;
+        }
+        .button-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        button {
+            appearance: none;
+            border: none;
+            border-radius: 999px;
+            padding: 14px 22px;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(135deg, #2f8df7, #3ecf8e);
+            color: white;
+            box-shadow: 0 12px 24px rgba(47, 141, 247, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 28px rgba(47, 141, 247, 0.24);
+        }
+        .problem-display {
+            line-height: 1.7;
+            font-size: 1.05rem;
+            margin-top: 12px;
+            padding: 18px;
+            border-radius: 14px;
+            background: #f0f4f8;
+            border: 1px dashed #bcccdc;
+            color: #102a43;
+        }
+        .highlight-number {
+            background: #ffebc7;
+            border-radius: 8px;
+            padding: 2px 6px;
+            color: #102a43;
+        }
+        .highlight-first {
+            background: #ffedd5;
+            border-radius: 8px;
+            padding: 2px 6px;
+            color: #b45309;
+        }
+        .highlight-compare {
+            background: #dbeafe;
+            border-radius: 8px;
+            padding: 2px 6px;
+            color: #1e40af;
+        }
+        .highlight-result {
+            background: #d1fae5;
+            border-radius: 8px;
+            padding: 2px 6px;
+            color: #166534;
+        }
+        .visualization {
+            margin-top: 22px;
+            display: grid;
+            gap: 18px;
+            align-items: start;
+        }
+        .figure {
+            display: none;
+            border-radius: 18px;
+            background: #ffffff;
+            border: 4px solid #1d4ed8;
+            min-height: 120px;
+            padding: 18px;
+            position: relative;
+            box-shadow: 0 14px 34px rgba(16, 42, 67, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            white-space: pre-line;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #102a43;
+        }
+        .figure.small {
+            width: 240px;
+            min-height: 90px;
+            border-color: #0f766e;
+            font-size: 1.8rem;
+        }
+        .figure.circle {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            display: none;
+            border-color: #db2777;
+            font-size: 1.6rem;
+        }
+        .figure.question {
+            cursor: pointer;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border: 4px dashed #334155;
+            color: #334155;
+            font-size: 3rem;
+        }
+        .arithmetic-display {
+            display: grid;
+            gap: 18px;
+        }
+        .arithmetic-group {
+            display: grid;
+            gap: 10px;
+        }
+        .arithmetic-label {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e3a8a;
+        }
+        .balls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .ball {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+        }
+        .ball.start {
+            background: #fbbf24;
+        }
+        .ball.added {
+            background: #60a5fa;
+        }
+        .ball.total {
+            background: #34d399;
+        }
+        .ball.remain {
+            background: #34d399;
+        }
+        .ball.scratched {
+            background: #ef4444;
+            opacity: 0.35;
+            position: relative;
+        }
+        .ball.scratched::after {
+            content: '✕';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+        }
+        .arithmetic-summary {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 0.95rem;
+            color: #334155;
+        }
+        .arithmetic-summary span {
+            background: #e2e8f0;
+            padding: 8px 10px;
+            border-radius: 12px;
+        }
+        .error {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <h1>Comparison Problem Builder</h1>
+        <p class="subtitle">The app generates a comparison word problem for you. Click Answer to explore the parts step by step.</p>
+
+        <div class="card">
+            <div class="button-row">
+                <button id="generateButton">Generate Problem</button>
+                <button id="answerButton">Answer</button>
+                <span>The app creates the word problem and then you click Answer.</span>
+            </div>
+            <div id="errorMessage" class="error" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label>Problem display</label>
+                <div id="problemDisplay" class="problem-display">Enter a problem and click Answer.</div>
+            </div>
+            <div class="visualization">
+                <div id="bigBox" class="figure"></div>
+                <div style="display:flex; gap: 18px; align-items:center; flex-wrap: wrap;">
+                    <div id="smallBox" class="figure small"></div>
+                    <div id="compareCircle" class="figure circle"></div>
+                </div>
+            </div>
+            <div id="arithmeticCard" class="card" style="display:none; margin-top: 18px;">
+                <div class="form-group">
+                    <label>Number model</label>
+                    <div id="arithmeticDisplay" class="arithmetic-display"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const generateButton = document.getElementById('generateButton');
+        const answerButton = document.getElementById('answerButton');
+        const problemDisplay = document.getElementById('problemDisplay');
+        const bigBox = document.getElementById('bigBox');
+        const smallBox = document.getElementById('smallBox');
+        const compareCircle = document.getElementById('compareCircle');
+        const arithmeticCard = document.getElementById('arithmeticCard');
+        const arithmeticDisplay = document.getElementById('arithmeticDisplay');
+        const errorMessage = document.getElementById('errorMessage');
+
+        let currentState = null;
+        let currentProblemText = '';
+
+        function safeText(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function parseProblem(text) {
+            const normalized = text.replace(/\u00A0/g, ' ');
+            const numbers = Array.from(normalized.matchAll(/\d+/g)).map(m => parseInt(m[0], 10));
+            const lower = normalized.toLowerCase();
+            const hasMore = /more|extra|additional|longer/.test(lower);
+            const hasFewer = /fewer|less/.test(lower);
+            const askUnknown = /how many|what is.*have|what is.*is|find.*number/.test(lower);
+
+            if (numbers.length < 2) {
+                return { error: 'The problem needs at least two numbers for comparison.' };
+            }
+            if (!askUnknown) {
+                return { error: 'Please ask a comparison question like "How many apples does Jill have?"' };
+            }
+            if (hasMore === hasFewer) {
+                return { error: 'Please use either "more" or "less/fewer" to describe the comparison.' };
+            }
+
+            const [first, second] = numbers;
+            let result = null;
+            let comparison = null;
+            let small = null;
+            let big = null;
+            let unknownType = null;
+            let equation = null;
+            let operation = null;
+
+            if (hasMore) {
+                comparison = second;
+                small = first;
+                result = first + second;
+                big = result;
+                unknownType = 'bigger';
+                operation = 'addition';
+                equation = `${comparison} + ${small} = ${result}`;
+            } else {
+                comparison = second;
+                big = first;
+                result = first - second;
+                small = result;
+                unknownType = 'smaller';
+                operation = 'subtraction';
+                equation = `${big} - ${comparison} = ${result}`;
+            }
+
+            const nameMatches = normalized.match(/\b[A-Z][a-z]+\b/g) || [];
+            const firstName = nameMatches[0] || '';
+            const secondName = nameMatches[1] || '';
+
+            let index = 0;
+            let highlighted = safeText(normalized).replace(/(\d+)/g, (match) => {
+                const cls = index === 0 ? 'highlight-first' : 'highlight-compare';
+                index += 1;
+                return `<span class="${cls}">${match}</span>`;
+            });
+
+            return {
+                firstName,
+                secondName,
+                raw: normalized,
+                text: highlighted,
+                numbers,
+                hasMore,
+                hasFewer,
+                small,
+                big,
+                comparison,
+                result,
+                unknownType,
+                operation,
+                equation,
+                explanation: hasMore
+                    ? 'The unknown bigger number is the answer because the second person has more.'
+                    : 'The unknown smaller number is the answer because the second person has fewer.'
+            };
+        }
+
+        function randomInteger(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function randomItem(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        function generateProblem() {
+            const names = ['Jack', 'Jill', 'Sam', 'Emma', 'Noah', 'Mia', 'Ava', 'Liam', 'Olivia', 'Ethan'];
+            const items = ['apples', 'cookies', 'marbles', 'books', 'stars', 'balls', 'cars', 'pencils'];
+            const firstName = randomItem(names);
+            const secondName = randomItem(names.filter(name => name !== firstName));
+            const item = randomItem(items);
+            const total = randomInteger(8, 20);
+            const difference = randomInteger(2, Math.min(10, total - 2));
+            const isMore = Math.random() < 0.5;
+
+            let text;
+            if (isMore) {
+                const firstNumber = randomInteger(2, total - difference);
+                text = `${firstName} has ${firstNumber} ${item}. ${secondName} has ${difference} more ${item} than ${firstName}. How many ${item} does ${secondName} have?`;
+            } else {
+                const biggerNumber = total;
+                text = `${firstName} has ${biggerNumber} ${item}. ${secondName} has ${difference} fewer ${item} than ${firstName}. How many ${item} does ${secondName} have?`;
+            }
+
+            currentProblemText = text;
+            currentState = null;
+            problemDisplay.innerHTML = safeText(text);
+            resetDisplay();
+            answerButton.disabled = false;
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+        }
+
+        function resetDisplay() {
+            bigBox.style.display = 'none';
+            smallBox.style.display = 'none';
+            compareCircle.style.display = 'none';
+            bigBox.textContent = '';
+            smallBox.textContent = '';
+            compareCircle.textContent = '';
+            bigBox.onclick = null;
+            smallBox.onclick = null;
+            bigBox.style.cursor = 'default';
+            smallBox.style.cursor = 'default';
+            bigBox.classList.remove('highlight-first', 'highlight-compare', 'highlight-result', 'question');
+            smallBox.classList.remove('highlight-first', 'highlight-compare', 'highlight-result', 'question');
+            compareCircle.classList.remove('highlight-first', 'highlight-compare', 'highlight-result', 'question');
+            arithmeticCard.style.display = 'none';
+            arithmeticDisplay.innerHTML = '';
+            currentState = null;
+            errorMessage.style.display = 'none';
+            errorMessage.textContent = '';
+        }
+
+        function prepareFigures(state) {
+            bigBox.style.display = 'flex';
+            smallBox.style.display = 'flex';
+            compareCircle.style.display = 'flex';
+
+            const bigName = state.unknownType === 'bigger' ? state.secondName : state.firstName;
+            const smallName = state.unknownType === 'smaller' ? state.secondName : state.firstName;
+
+            bigBox.textContent = '';
+            smallBox.textContent = '';
+            compareCircle.textContent = '';
+
+            bigBox.classList.remove('highlight-first', 'highlight-compare', 'highlight-result', 'question');
+            smallBox.classList.remove('highlight-first', 'highlight-compare', 'highlight-result', 'question');
+            compareCircle.classList.remove('highlight-first', 'highlight-compare', 'highlight-result', 'question');
+
+            bigBox.dataset.role = 'big';
+            smallBox.dataset.role = 'small';
+            compareCircle.dataset.role = 'comparison';
+
+            bigBox.dataset.name = bigName;
+            smallBox.dataset.name = smallName;
+            bigBox.dataset.isUnknown = state.unknownType === 'bigger' ? 'true' : 'false';
+            smallBox.dataset.isUnknown = state.unknownType === 'smaller' ? 'true' : 'false';
+            bigBox.dataset.value = state.unknownType === 'bigger' ? '?' : state.big;
+            smallBox.dataset.value = state.unknownType === 'smaller' ? '?' : state.small;
+            compareCircle.dataset.value = state.comparison;
+            compareCircle.dataset.isUnknown = 'false';
+
+            bigBox.dataset.stage = '0';
+            smallBox.dataset.stage = '0';
+            compareCircle.dataset.stage = '0';
+
+            bigBox.title = 'Click to reveal';
+            smallBox.title = 'Click to reveal';
+            compareCircle.title = 'Click to reveal';
+
+            bigBox.onclick = () => revealFigure(bigBox, state);
+            smallBox.onclick = () => revealFigure(smallBox, state);
+            compareCircle.onclick = () => revealFigure(compareCircle, state);
+        }
+
+        function revealFigure(element, state) {
+            const role = element.dataset.role;
+            const stage = parseInt(element.dataset.stage, 10);
+            const isComparison = role === 'comparison';
+            const isUnknown = element.dataset.isUnknown === 'true';
+
+            if (isComparison) {
+                if (stage === 0) {
+                    element.textContent = element.dataset.value;
+                    element.classList.add('highlight-compare');
+                    element.style.cursor = 'default';
+                    element.onclick = null;
+                    element.dataset.stage = '1';
+                }
+                return;
+            }
+
+            if (stage === 0) {
+                element.textContent = element.dataset.name;
+                element.style.cursor = 'pointer';
+                element.dataset.stage = '1';
+                return;
+            }
+
+            if (stage === 1) {
+                element.textContent = `${element.dataset.name}\n${element.dataset.value}`;
+                element.classList.remove('question');
+                element.classList.add(isUnknown ? 'question' : 'highlight-first');
+                element.style.cursor = isUnknown ? 'pointer' : 'default';
+                element.dataset.stage = '2';
+                if (!isUnknown) {
+                    element.onclick = null;
+                }
+                return;
+            }
+
+            if (stage === 2 && isUnknown) {
+                element.textContent = state.equation;
+                element.classList.remove('question');
+                element.classList.add('highlight-result');
+                element.style.cursor = 'pointer';
+                element.dataset.stage = '3';
+                element.dataset.rendered = 'false';
+                return;
+            }
+
+            if (stage === 3 && isUnknown && element.dataset.rendered === 'false') {
+                renderArithmetic(state);
+                element.dataset.rendered = 'true';
+                element.style.cursor = 'default';
+                return;
+            }
+        }
+
+        function renderArithmetic(state) {
+            arithmeticCard.style.display = 'block';
+            arithmeticDisplay.innerHTML = '';
+            if (state.operation === 'addition') {
+                arithmeticDisplay.appendChild(createGroup('Start', createBallsRow(state.small, 'ball start')));
+                arithmeticDisplay.appendChild(createGroup('Add', createBallsRow(state.comparison, 'ball added')));
+                arithmeticDisplay.appendChild(createGroup('Total', createBallsRow(state.result, 'ball total')));
+            } else {
+                const totalRow = createSubtractionRow(state.big, state.comparison);
+                arithmeticDisplay.appendChild(createGroup('Total with removed balls', totalRow));
+                arithmeticDisplay.appendChild(createGroup('Remaining', createBallsRow(state.result, 'ball remain')));
+            }
+        }
+
+        function createSubtractionRow(total, removed) {
+            const row = document.createElement('div');
+            row.className = 'balls-row';
+            for (let i = 0; i < total; i += 1) {
+                const dot = document.createElement('div');
+                if (i < removed) {
+                    dot.className = 'ball scratched';
+                } else {
+                    dot.className = 'ball remain';
+                }
+                row.appendChild(dot);
+            }
+            return row;
+        }
+
+        function createGroup(label, row) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'arithmetic-group';
+            const heading = document.createElement('div');
+            heading.className = 'arithmetic-label';
+            heading.textContent = label;
+            wrapper.appendChild(heading);
+            wrapper.appendChild(row);
+            return wrapper;
+        }
+
+        function createBallsRow(count, className) {
+            const row = document.createElement('div');
+            row.className = 'balls-row';
+            for (let i = 0; i < count; i += 1) {
+                const dot = document.createElement('div');
+                dot.className = className;
+                row.appendChild(dot);
+            }
+            return row;
+        }
+
+        generateButton.addEventListener('click', () => {
+            generateProblem();
+        });
+
+        answerButton.addEventListener('click', () => {
+            if (!currentProblemText) {
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = 'Generate a problem first.';
+                return;
+            }
+
+            resetDisplay();
+            const parsed = parseProblem(currentProblemText);
+            if (parsed.error) {
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = parsed.error;
+                problemDisplay.innerHTML = safeText(currentProblemText);
+                return;
+            }
+
+            currentState = parsed;
+            problemDisplay.innerHTML = parsed.text;
+
+            prepareFigures(parsed);
+        });
+
+        // Generate the first problem automatically when the page loads.
+        window.addEventListener('load', generateProblem);
+    </script>
+</body>
+</html>

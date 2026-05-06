@@ -597,6 +597,8 @@ services:
 
 ## Architecture & Logic Summary
 
+> For a separate high-level architecture overview, see [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
 ### Network Path Model
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
